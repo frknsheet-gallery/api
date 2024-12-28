@@ -1,24 +1,25 @@
 const express = require("express");
 const CORS = require("cors");
 const fs = require("fs");
-const multer = require('multer')
+const https = require("node:https");
+// const multer = require('multer')
 
 
 const app = express();
 const port = 5000;
 
 app.use(CORS());
+app.use(express.json()); // Middleware для обработки JSON
 app.use('/images' , express.static(__dirname + '/img'));
-const upload = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = __dirname + '/img';
-    cb(null, dir);
-  }
-})
+// const upload = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     const dir = __dirname + '/img';
+//     cb(null, dir);
+//   }
+// })
 
 /*
-GET
-returns URLs to all images.
+GET: returns URLs to all images.
  */
 app.get('/api/images', (req, res) => {
   fs.readdir('./img', (err, files) => {
@@ -31,12 +32,26 @@ app.get('/api/images', (req, res) => {
   });
 });
 
+// POST: Adds a new img
 app.post('/api/images/add', (req, res) => {
-  console.log('NEW REQU!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!EST');
+  console.log('Новый запрос на загрузку изображений');
 
-  console.log(req);
-  res.status(200).send();
-})
+  const { title, fileURL } = req.body;
+  console.log(fileURL);
+  const file = fs.createWriteStream('img/' + title);
+  https.get(fileURL, function(responseFile) {
+    if (responseFile.statusCode !== 200) {
+      res.send("Error loading file: broken link")
+      return;
+    }
+    responseFile.pipe(file).on('error', (err) => console.log(err));
+    file.on("finish", () => {
+      file.close();
+      res.status(200).send('Данные успешно получены');
+    });
+  })
+
+});
 
 app.listen(port, function () {
   console.log(`CORS-enabled web server listening on port ${port}`)

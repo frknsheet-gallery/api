@@ -1,1 +1,1 @@
-This is a fullstack gallery app written in JS.
+this is an api for my fullstack pet project
